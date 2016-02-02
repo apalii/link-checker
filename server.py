@@ -5,7 +5,6 @@ import tornado.web
 from tornado.httpclient import AsyncHTTPClient
 from tornado.options import define, options
 
-import ujson as json
 
 define("port", default=3000, help="run on the given port", type=int)
 
@@ -23,8 +22,8 @@ class LinkCheckerHandler(tornado.web.RequestHandler):
             self.write(to_response)
             self.finish()
         if url is not None:
-            client = AsyncHTTPClient()
-            client.fetch(
+            http_client = AsyncHTTPClient()
+            http_client.fetch(
                 url,
                 method='GET',
                 callback=self.on_response,
@@ -48,10 +47,15 @@ class LinkCheckerHandler(tornado.web.RequestHandler):
 
 
 class CurrencyExchangeHandler(tornado.web.RequestHandler):
-    """Using generators. Will be implemented soon"""
-
+    """Using generator-based interface (tornado.gen)"""
+    @tornado.gen.coroutine
     def get(self):
-        self.write(self.request.host)
+        url = "https://api.privatbank.ua/p24api/"
+        url += "pubinfo?json&exchange&coursid=11"
+        http_client = AsyncHTTPClient()
+        http_response = yield http_client.fetch(url, validate_cert=False)
+        self.write(http_response.body)
+        self.set_header('Content-Type', 'application/json')
 
 
 urls = [
