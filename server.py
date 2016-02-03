@@ -5,8 +5,14 @@ import tornado.web
 from tornado.httpclient import AsyncHTTPClient
 from tornado.options import define, options
 
+import os.path
 
 define("port", default=3000, help="run on the given port", type=int)
+
+class EmptyPageHandler(tornado.web.RequestHandler):
+    def get(self):
+        info = "Try the following {}".format([ i[0] for i in urls ])
+        self.render("main.html", context_info=info)
 
 
 class LinkCheckerHandler(tornado.web.RequestHandler):
@@ -61,12 +67,21 @@ class CurrencyExchangeHandler(tornado.web.RequestHandler):
 urls = [
     (r"/check", LinkCheckerHandler),
     (r"/kurs", CurrencyExchangeHandler),
+    (r"/", EmptyPageHandler),
 ]
 
 if __name__ == "__main__":
-    print "Starting tornado web server"
-    tornado.options.parse_command_line()
-    app = tornado.web.Application(handlers=urls, debug=True)
-    http_server = tornado.httpserver.HTTPServer(app)
-    http_server.listen(options.port)
-    tornado.ioloop.IOLoop.instance().start()
+    try:
+        print "Starting tornado web server"
+        tornado.options.parse_command_line()
+        app = tornado.web.Application(
+            handlers=urls,
+            debug=False,
+            template_path=os.path.join(os.path.dirname(__file__), "templates"),
+            static_path=os.path.join(os.path.dirname(__file__), "static"),
+        )
+        http_server = tornado.httpserver.HTTPServer(app)
+        http_server.listen(options.port)
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        tornado.ioloop.IOLoop.instance().stop()
